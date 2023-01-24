@@ -1,17 +1,12 @@
-__*__
-<<<<<<< HEAD
+
 #logging info
 log/*
 loginfo*
 nohup.out
 # outputs 
-output/*
+*output*
 *model_*
 # same as main train 
 main_continue.py
 # Jupyter checkpoint files
 *.ipynb_checkpoint
-
-
-=======
-./log/*
