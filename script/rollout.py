@@ -1,21 +1,25 @@
+__author__ = "Keenan Manpearl"
+__date__ = "2023/1/24"
+
+"""
+original code by Xinqiang Ding <xqding@umich.edu>
+
+After training the model, we can try to use the model to do jumpy predictions.
+"""
+
 import pickle
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import torch
-import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import sys
 from model import *
 from prep_data import *
 
-""" After training the model, we can try to use the model to do
-jumpy predictions.
-"""
 
 #### load trained model
-checkpoint = torch.load("./output/model/model_epoch_3799.pt")
+checkpoint = torch.load("output/model_epoch_2899.pt")
 input_size = 784
 processed_x_size = 784
 belief_state_size = 50
@@ -27,7 +31,7 @@ tdvae.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 #### load dataset 
-with open("./data/MNIST.pkl", 'rb') as file_handle:
+with open("MNIST.pkl", 'rb') as file_handle:
     MNIST = pickle.load(file_handle)
 tdvae.eval()
 tdvae = tdvae.cuda()
@@ -49,10 +53,8 @@ t1, t2 = 11, 15
 rollout_images = tdvae.rollout(images, t1, t2)
 
 #### plot results
-#fig = plt.figure(0, figsize = (t2+2,batch_size))
 fig = plt.figure(0, figsize = (12,4))
 
-#fig = plt.figure(0)
 fig.clf()
 gs = gridspec.GridSpec(batch_size,t2+2)
 gs.update(wspace = 0.05, hspace = 0.05)

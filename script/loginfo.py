@@ -1,4 +1,12 @@
-import numpy as np
+__author__ = "Keenan Manpearl"
+__date__ = "2023/1/24"
+
+"""
+original code by Xinqiang Ding <xqding@umich.edu>
+
+records loss
+"""
+
 import matplotlib.pyplot as plt
 
 loss = []

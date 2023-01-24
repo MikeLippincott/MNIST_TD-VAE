@@ -1,2 +1,20 @@
 __*__
+<<<<<<< HEAD
+#logging info
+log/*
+loginfo*
+nohup.out
+# outputs 
+output/*
+*model_*
+# same as main train 
+main_continue.py
+# Jupyter checkpoint files
+*.ipynb_checkpoint
+
+
+=======
 ./log/*
+*.pt
+*.pkl
+>>>>>>> 43d62def246752a549f40aba4056503d82f547fc

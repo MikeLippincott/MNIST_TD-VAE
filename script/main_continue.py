@@ -1,5 +1,12 @@
-__author__ = "Xinqiang Ding <xqding@umich.edu>"
-__date__ = "2018/12/17 16:45:38"
+__author__ = "Keenan Manpearl"
+__date__ = "2023/1/24"
+
+"""
+original code by Xinqiang Ding <xqding@umich.edu>
+
+train the model
+"""
+
 
 import pickle
 import numpy as np
@@ -10,8 +17,9 @@ from torch.utils.data import Dataset, DataLoader
 from model import *
 from prep_data import *
 import sys
+from torchsummary import summary
 
-with open("./data/MNIST.pkl", 'rb') as file_handle:
+with open("MNIST.pkl", 'rb') as file_handle:
     MNIST = pickle.load(file_handle)
 
 data = MNIST_Dataset(MNIST['train_image'])
@@ -27,15 +35,13 @@ tdvae = TD_VAE(input_size, processed_x_size, belief_state_size, state_size)
 tdvae = tdvae.cuda()
 optimizer = optim.Adam(tdvae.parameters(), lr = 0.0005)
 
-checkpoint = torch.load("./output/model/model_epoch_2999.pt")
+checkpoint = torch.load("./output/model_epoch_2899.pt")
 tdvae.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-start_epoch = 3000
-end_epoch = 6000
-log_file_handle = open("./log/loginfo.txt", 'a')
+log_file_handle = open("loginfo_test.txt", 'a')
 
-for epoch in range(start_epoch, end_epoch):
+for epoch in range(1):
     for idx, images in enumerate(data_loader):
         images = images.cuda()       
         tdvae.forward(images)
@@ -57,4 +63,18 @@ for epoch in range(start_epoch, end_epoch):
             'model_state_dict': tdvae.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss
-        }, "./output/model/model_epoch_{}.pt".format(epoch))
+        }, "./output/model_epoch_{}.pt".format(epoch))
+
+
+
+# info about the model 
+
+params = list(tdvae.parameters())
+print(len(params))
+print(params[0].size())
+print(params[0])
+print(tdvae)
+
+summary(tdvae)
+summary(tdvae (1, 784))
+summary(tdvae, (60000, 784))
