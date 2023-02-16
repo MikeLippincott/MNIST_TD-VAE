@@ -24,22 +24,20 @@ processed_x_size = 784
 belief_state_size = 50
 state_size = 8
 tdvae = TD_VAE(input_size, processed_x_size, belief_state_size, state_size)
-optimizer = optim.Adam(tdvae.parameters(), lr = 0.0005)
+optimizer = optim.Adam(tdvae.parameters(), lr=0.0005)
 
-tdvae.load_state_dict(checkpoint['model_state_dict'])
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+tdvae.load_state_dict(checkpoint["model_state_dict"])
+optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-#### load dataset 
-with open("MNIST.pkl", 'rb') as file_handle:
+#### load dataset
+with open("MNIST.pkl", "rb") as file_handle:
     MNIST = pickle.load(file_handle)
 tdvae.eval()
 tdvae = tdvae.cuda()
 
-data = MNIST_Dataset(MNIST['train_image'], binary = False)
+data = MNIST_Dataset(MNIST["train_image"], binary=False)
 batch_size = 6
-data_loader = DataLoader(data,
-                         batch_size = batch_size,
-                         shuffle = True)
+data_loader = DataLoader(data, batch_size=batch_size, shuffle=True)
 idx, images = next(enumerate(data_loader))
 
 images = images.cuda()
@@ -52,23 +50,24 @@ t1, t2 = 11, 15
 rollout_images = tdvae.rollout(images, t1, t2)
 
 #### plot results
-fig = plt.figure(0, figsize = (12,4))
+fig = plt.figure(0, figsize=(12, 4))
 
 fig.clf()
-gs = gridspec.GridSpec(batch_size,t2+2)
-gs.update(wspace = 0.05, hspace = 0.05)
+gs = gridspec.GridSpec(batch_size, t2 + 2)
+gs.update(wspace=0.05, hspace=0.05)
 for i in range(batch_size):
     for j in range(t1):
-        axes = plt.subplot(gs[i,j])
-        axes.imshow(1-images.cpu().data.numpy()[i,j].reshape(28,28),
-                    cmap = 'binary')
-        axes.axis('off')
+        axes = plt.subplot(gs[i, j])
+        axes.imshow(1 - images.cpu().data.numpy()[i, j].reshape(28, 28), cmap="binary")
+        axes.axis("off")
 
-    for j in range(t1,t2+1):
-        axes = plt.subplot(gs[i,j+1])
-        axes.imshow(1-rollout_images.cpu().data.numpy()[i,j-t1].reshape(28,28),
-                    cmap = 'binary')
-        axes.axis('off')
+    for j in range(t1, t2 + 1):
+        axes = plt.subplot(gs[i, j + 1])
+        axes.imshow(
+            1 - rollout_images.cpu().data.numpy()[i, j - t1].reshape(28, 28),
+            cmap="binary",
+        )
+        axes.axis("off")
 
 fig.savefig("./output/rollout_result.eps")
 plt.show()
