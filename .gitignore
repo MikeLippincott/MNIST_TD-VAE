@@ -3,6 +3,7 @@ __pycache__/
 #logging info
 log
 loginfo*.txt
+__*__
 nohup.out
 # outputs 
 *output*
@@ -11,3 +12,5 @@ nohup.out
 main_continue.py
 # Jupyter checkpoint files
 *.ipynb_checkpoint
+# unused scripts
+test*
