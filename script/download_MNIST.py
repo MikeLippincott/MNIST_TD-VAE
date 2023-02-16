@@ -16,47 +16,35 @@ import gzip
 import pickle
 
 # download train labels
-# download train labels
 print("Downloading train-labels-idx1-ubyte ......")
 http = urllib3.PoolManager()
 r = http.request('GET', 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz')
 data = gzip.decompress(r.data)
 # number of images is 4-8
-# number of images is 4-8
 num = int.from_bytes(data[4:8], 'big')
 # images start at 8
-# images start at 8
-offset = 8
-# get labels from data 
+offset = 8 
 # get labels from data 
 train_label = np.array([data[offset+i] for i in range(num)])
 
-# download train image
 # download train image
 print("Downloading train-image-idx3-ubyte ......")
 http.clear()
 r = http.request('GET', 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz')
 data = gzip.decompress(r.data)
 # number of images is 4:8 (60000)
-# number of images is 4:8 (60000)
 num = int.from_bytes(data[4:8], 'big')
-# number of rows is 8:12 (28)
 # number of rows is 8:12 (28)
 nrows = int.from_bytes(data[8:12], 'big')
 # number of cols is 12:16 (28)
-# number of cols is 12:16 (28)
 ncols = int.from_bytes(data[12:16], 'big')
 image = np.zeros((num, nrows * ncols))
-# images start at 16
 # images start at 16
 offset = 16
 for k in range(num):
     for i in range(nrows):
         for j in range(ncols):
-            # TODO: still unsure where dimensions come from 
             image[k, i*ncols+j] = data[16 + k*nrows*ncols + i*ncols+j]
-            # 0 = white 255 = black 
-            # will give numbers between 0 and 1
             # 0 = white 255 = black 
             # will give numbers between 0 and 1
 train_image = image / 255.0
