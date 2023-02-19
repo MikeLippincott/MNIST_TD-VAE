@@ -9,6 +9,7 @@ original code by Xinqiang Ding <xqding@umich.edu>
 import numpy as np
 from torch.utils.data import Dataset
 
+
 class MNIST_Dataset(Dataset):
     def __init__(self, image, binary=True):
         super(MNIST_Dataset).__init__()
@@ -77,4 +78,3 @@ class MNIST_Dataset(Dataset):
 
         image_seq = np.array(image_list)
         return image_seq
-
