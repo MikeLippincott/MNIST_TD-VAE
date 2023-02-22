@@ -7,10 +7,12 @@ __*__
 nohup.out
 # outputs 
 *output*
-*model_*
+model2.py
 # same as main train 
 main_continue.py
 # Jupyter checkpoint files
-*.ipynb_checkpoint
+*.ipynb*
 # unused scripts
 test*
+torchview*
+*pkl

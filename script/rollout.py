@@ -72,4 +72,3 @@ for i in range(batch_size):
 fig.savefig("./output/rollout_result.eps")
 plt.show()
 sys.exit()
-
