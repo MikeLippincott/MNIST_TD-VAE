@@ -115,6 +115,39 @@ with open(log_file, "w") as log_file_handle:
                 f"./output/model_epoch_{epoch}.pt",
             )
 
+            # Calculate loss function based on two time points
+            loss = tdvae.calculate_loss(t_1, t_2)
+
+            # must clear out stored gradient
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                ),
+                file=log_file_handle,
+                flush=True,
+            )
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                )
+            )
+
+        if (epoch + 1) % 50 == 0:
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": tdvae.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "loss": loss,
+                },
+                f"./output/model_epoch_{epoch}.pt",
+            )
+
 '''
 # info about the model
 params = list(tdvae.parameters())
@@ -133,3 +166,4 @@ summary(tdvae)
 summary(tdvae(1, 784))
 summary(tdvae, (60000, 784))
 '''
+

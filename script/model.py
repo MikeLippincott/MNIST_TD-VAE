@@ -14,6 +14,7 @@ import torch.nn as nn
 class DBlock(nn.Module):
     """A basic building block for parameterizing a normal distribution.
     It corresponds to the D operation in the reference Appendix.
+
     Returns a mean and log sigma for any arbitrary context X
     [mu, log_sigma] = W3*tanh(W1*x + B1)*sigmoid(W2*x + B2) + B3
     """
@@ -36,6 +37,7 @@ class DBlock(nn.Module):
         t = t * torch.sigmoid(self.weight2(input))
         mu = self.mu(t)
         logsigma = self.logsigma(t)
+
         return mu, logsigma
 
 
@@ -80,16 +82,31 @@ class Decoder(nn.Module):
 class TD_VAE(nn.Module):
     """
     The full TD_VAE model.
+
     -------------------
     First, let's first go through some definitions which would help understanding what is going
     on in the following code.
     Belief: As the model is fed a sequence of observations, x_t, the model updates its belief
         state, b_t, through an LSTM network. It is a deterministic function of x_t.
+
+    -------------------
+    First, let's first go through some definitions which would help understanding what is going
+    on in the following code.
+
+    Belief: As the model is fed a sequence of observations, x_t, the model updates its belief
+        state, b_t, through an LSTM network. It is a deterministic function of x_t.
     State: The latent state variable, z.
     Observation: The observed variable, x.
+
     -------------------
     The TD_VAE contains several interconnected layers, which all have different purposes.
     We provide more details on each layer below, but, in summary, the layers are as follows:
+
+
+    -------------------
+    The TD_VAE contains several interconnected layers, which all have different purposes.
+    We provide more details on each layer below, but, in summary, the layers are as follows:
+
     1) The preprocessing layer. This converts the input images to a form ready for LSTM training
     2) The LSTM network. This network computes the belief states of the preprocessed data X
     3) The encoder network. This is a two layer network that learns a compressed representation of
@@ -100,21 +117,29 @@ class TD_VAE(nn.Module):
         network that enables us to predict compressed representation z in the future
     6) The decoder network. This layer will learn how to reverse the compression process and convert z
         back to the original input dimensions X
+
     -------------------
     The TD-VAE model learns by minimizing reconstruction loss (reconstructing compressed belief state
     back to original X dimensions) and mimizing two distinct KL divergence terms. To describe these terms,
     it is helpful to realize that there are three ways to arrive at a compressed representation z.
+
     A) Encoder network (P_B)
     B) Smoothing network (q_s)
     C) Transition network (P_T)
+
     The first KL term used to learn is: KL( P_B | q_s )
     This learns if the world is providing enough information to predict an earlier compressed state.
+
     The second KL term used to learn is: KL( P_B | P_T ), which is learned via sampling (no closed solution)
     This learns if the future compressed states can be predicted from past information.
+
     Therefore, the objective function for the TD-VAE is as follows:
+
             loss = ||X - decoder(P_B(X))|| + KL( P_B | q_s ) + KL( P_B | P_T )
+
     -------------------
     We are primarily interested in two aspects of this model.
+
     1) We would like to be able to predict future states of the world, perhaps from static images.
     2) We would like to explore the encoded representation z formed from the belief state encoder.
     We will compare z across different contexts, which will tell us how different contexts impact
@@ -285,8 +310,14 @@ class TD_VAE(nn.Module):
     def calculate_loss(self, t1, t2):
         """
         Calculate the VD-VAE loss, which corresponds to equations (6) and (8) in the TD-VAE paper.
+
         We provide more explicit details below, but, in summary, the loss contains three core elements:
         1) The difference between the encoded z at time 1 and the hallucinated (or imagined) z at time 1
+
+        We provide more explicit details below, but, in summary, the loss contains three core elements:
+
+        1) The difference between the encoded z at time 1 and the hallucinated (or imagined) z at time 1
+
             The encoded z at time 1 is generated two ways: 1) the belief distribution (P_B) and 2) the
             smoothing distribution (q_s). The smoothing distribution learns the compressed z at time 2 from
             information of compressed z at time 1 and belief state at time 2. This loss term ensures that
@@ -294,7 +325,13 @@ class TD_VAE(nn.Module):
             certain states of the world that were previously observed. Importantly, we can sample from the
             belief distribution to generate new data.
                 This term enables data generation.
+
         2) The difference between the encoded z at time 2 and the predicted z at time 2
+
+                This term enables data generation.
+
+        2) The difference between the encoded z at time 2 and the predicted z at time 2
+
             The encoded z at time 2 is generated two ways as well: 1) the belief distribution (P_B), which
             is the same way we encode z at time 1 above, and 2) the state prediction network (or forward model).
             This loss term ensures that we're able to predict the compressed state of the world in a jumpy manner
@@ -302,10 +339,16 @@ class TD_VAE(nn.Module):
             Importantly, we can make predictions about future states with the transition network.
                 This term enables state prediction.
         3) The reconstruction term between the decoded z at time 2 and real data at time 2
+
+                This term enables state prediction.
+
+        3) The reconstruction term between the decoded z at time 2 and real data at time 2
+
             This is a standard reconstruction term. We pass input data x through an encoder (belief network) to
             a lower dimensional compressed z. We then decode this z through a decoder to obtain the same input
             dimensions as X. We minimize the difference between this decoded X and the ground truth X. Importantly,
-            with this decoder we can now fully simulate new data in the original dimension.
+            with this decoder we can now fully simulate new data in the original dimension. 
+
                 This term fully enables data generation (original dimension).
         """
 
@@ -333,6 +376,7 @@ class TD_VAE(nn.Module):
             torch.cat((self.b[:, t2, :], z_time2_layer2), dim=-1)
         )
 
+ 
         z_time2_layer1_epsilon = torch.randn_like(z_time2_layer1_mu)
 
         z_time2_layer1 = (
@@ -577,6 +621,7 @@ class TD_VAE(nn.Module):
             # Decode sampled state z_t1 to predict x
             predict_x = self.decoder_z_to_x(predict_z)
             rollout_x.append(predict_x)
+
 
             z = predict_z
 
