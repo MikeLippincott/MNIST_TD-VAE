@@ -6,6 +6,7 @@ original code by Xinqiang Ding <xqding@umich.edu>
 train the model
 """
 
+import pathlib
 import pickle
 import numpy as np
 import torch
@@ -14,8 +15,22 @@ from torch.utils.data import DataLoader
 from model import *
 from prep_data import *
 
-#### preparing dataset
-with open("MNIST.pkl", "rb") as file_handle:
+# Set paths
+data_file = "MNIST.pkl"
+log_file = pathlib.Path("./log/loginfo.txt")
+
+# Set constants
+time_constant_max = 16  # There are 20 frames total
+time_jump_options = [1, 2, 3, 4]  # Jump up to 4 frames away
+
+
+# Set hyperparameters
+batch_size = 512
+num_epoch = 6000
+learning_rate = 0.0005
+
+# Prepare dataset
+with open(data_file, "rb") as file_handle:
     MNIST = pickle.load(file_handle)
 
 data = MNIST_Dataset(MNIST["train_image"])
@@ -23,17 +38,20 @@ data = MNIST_Dataset(MNIST["train_image"])
 # mini batch gradient descent
 # default method for implementing gradient descent in deep learning
 # computationally effecient, stable convergance, faster learning
-batch_size = 512
 data_loader = DataLoader(data, batch_size=batch_size, shuffle=True)
 
-#### build a TD-VAE model
+# Build a TD-VAE model
 input_size = 784
-# TODO: where does processed_x_size come from?
 processed_x_size = 784
 belief_state_size = 50
-# from original paper: state size = 8
-state_size = 8
-tdvae = TD_VAE(input_size, processed_x_size, belief_state_size, state_size)
+state_size = 8  # from original paper
+
+tdvae = TD_VAE(
+    x_size=input_size,
+    processed_x_size=processed_x_size,
+    b_size=belief_state_size,
+    z_size=state_size,
+)
 
 # "CUDA is a parallel computing platform and application programming interface (API)
 # that allows software to use certain types of graphics processing units (GPUs)
@@ -45,43 +63,53 @@ tdvae = TD_VAE(input_size, processed_x_size, belief_state_size, state_size)
 # https://en.wikipedia.org/wiki/CUDA
 tdvae = tdvae.cuda()
 
-#### training
-optimizer = optim.Adam(tdvae.parameters(), lr=0.0005)
-num_epoch = 6000
-log_file_handle = open("./log/loginfo.txt", "w")
-for epoch in range(num_epoch):
-    for idx, images in enumerate(data_loader):
-        images = images.cuda()
-        tdvae.forward(images)
-        t_1 = np.random.choice(16)
-        t_2 = t_1 + np.random.choice([1, 2, 3, 4])
-        loss = tdvae.calculate_loss(t_1, t_2)
-        # must clear out stored gradient
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+# Train model
+optimizer = optim.Adam(tdvae.parameters(), lr=learning_rate)
 
-        print(
-            "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(epoch, idx, loss.item()),
-            file=log_file_handle,
-            flush=True,
-        )
+with open(log_file, "w") as log_file_handle:
+    for epoch in range(num_epoch):
+        for idx, images in enumerate(data_loader):
+            images = images.cuda()
 
-        print(
-            "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(epoch, idx, loss.item())
-        )
+            # Make a forward step of preprocessing and LSTM
+            tdvae.forward(images)
 
-    if (epoch + 1) % 50 == 0:
-        torch.save(
-            {
-                "epoch": epoch,
-                "model_state_dict": tdvae.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "loss": loss,
-            },
-            f"./output/model_epoch_{epoch}.pt",
-        )
-log_file_handle.close()
+            # Randomly sample a time step and jumpy step
+            t_1 = np.random.choice(time_option_max)
+            t_2 = t_1 + np.random.choice(time_jump_options)
+
+            # Calculate loss function based on two time points
+            loss = tdvae.calculate_loss(t_1, t_2)
+
+            # must clear out stored gradient
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                ),
+                file=log_file_handle,
+                flush=True,
+            )
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                )
+            )
+
+        if (epoch + 1) % 50 == 0:
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": tdvae.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "loss": loss,
+                },
+                f"./output/model_epoch_{epoch}.pt",
+            )
 
 # info about the model
 params = list(tdvae.parameters())
@@ -99,4 +127,3 @@ print(tdvae)
 summary(tdvae)
 summary(tdvae(1, 784))
 summary(tdvae, (60000, 784))
-
