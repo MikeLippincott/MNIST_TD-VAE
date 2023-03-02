@@ -36,7 +36,8 @@ class DBlock(nn.Module):
         t = torch.tanh(self.weight1(input))
         t = t * torch.sigmoid(self.weight2(input))
         mu = self.mu(t)
-        logsigma = self.log_sigma(t)
+        logsigma = self.logsigma(t)
+
         return mu, logsigma
 
 
@@ -85,13 +86,22 @@ class TD_VAE(nn.Module):
     -------------------
     First, let's first go through some definitions which would help understanding what is going
     on in the following code.
-
     Belief: As the model is fed a sequence of observations, x_t, the model updates its belief
         state, b_t, through an LSTM network. It is a deterministic function of x_t.
 
-    State: The latent state variable, z.
+    -------------------
+    First, let's first go through some definitions which would help understanding what is going
+    on in the following code.
 
+    Belief: As the model is fed a sequence of observations, x_t, the model updates its belief
+        state, b_t, through an LSTM network. It is a deterministic function of x_t.
+    State: The latent state variable, z.
     Observation: The observed variable, x.
+
+    -------------------
+    The TD_VAE contains several interconnected layers, which all have different purposes.
+    We provide more details on each layer below, but, in summary, the layers are as follows:
+
 
     -------------------
     The TD_VAE contains several interconnected layers, which all have different purposes.
@@ -302,6 +312,9 @@ class TD_VAE(nn.Module):
         Calculate the VD-VAE loss, which corresponds to equations (6) and (8) in the TD-VAE paper.
 
         We provide more explicit details below, but, in summary, the loss contains three core elements:
+        1) The difference between the encoded z at time 1 and the hallucinated (or imagined) z at time 1
+
+        We provide more explicit details below, but, in summary, the loss contains three core elements:
 
         1) The difference between the encoded z at time 1 and the hallucinated (or imagined) z at time 1
 
@@ -311,6 +324,9 @@ class TD_VAE(nn.Module):
             the hallucination of future data looks like how future data might be expected to behave given
             certain states of the world that were previously observed. Importantly, we can sample from the
             belief distribution to generate new data.
+                This term enables data generation.
+
+        2) The difference between the encoded z at time 2 and the predicted z at time 2
 
                 This term enables data generation.
 
@@ -321,6 +337,8 @@ class TD_VAE(nn.Module):
             This loss term ensures that we're able to predict the compressed state of the world in a jumpy manner
             (meaning, more than one step in the future) and that this prediction is similar to our encoder model.
             Importantly, we can make predictions about future states with the transition network.
+                This term enables state prediction.
+        3) The reconstruction term between the decoded z at time 2 and real data at time 2
 
                 This term enables state prediction.
 
@@ -329,7 +347,7 @@ class TD_VAE(nn.Module):
             This is a standard reconstruction term. We pass input data x through an encoder (belief network) to
             a lower dimensional compressed z. We then decode this z through a decoder to obtain the same input
             dimensions as X. We minimize the difference between this decoded X and the ground truth X. Importantly,
-            with this decoder we can now fully simulate new data in the original dimension.
+            with this decoder we can now fully simulate new data in the original dimension. 
 
                 This term fully enables data generation (original dimension).
         """
@@ -358,7 +376,8 @@ class TD_VAE(nn.Module):
             torch.cat((self.b[:, t2, :], z_time2_layer2), dim=-1)
         )
 
-        z_time2_layer2_epsilon = torch.randn_like(z_time2_layer1_mu)
+ 
+        z_time2_layer1_epsilon = torch.randn_like(z_time2_layer1_mu)
 
         z_time2_layer1 = (
             z_time2_layer1_mu
@@ -506,11 +525,11 @@ class TD_VAE(nn.Module):
             0.5
             * (
                 (z_time2_layer2 - z_time2_layer2_transition_mu)
-                / torch.exp(z_time2_layer2_transition_log_sigma)
+                / torch.exp(z_time2_layer2_transition_logsigma)
             )
             ** 2
             + 0.5 * z_time2_layer2.new_tensor(2 * np.pi)
-            + z_time2_layer2_transition_log_sigma,
+            + z_time2_layer2_transition_logsigma,
             -1,
         )
 
@@ -602,6 +621,7 @@ class TD_VAE(nn.Module):
             # Decode sampled state z_t1 to predict x
             predict_x = self.decoder_z_to_x(predict_z)
             rollout_x.append(predict_x)
+
 
             z = predict_z
 

@@ -17,7 +17,7 @@ from prep_data import *
 
 # Set paths
 data_file = "MNIST.pkl"
-log_file = pathlib.Path("./log/loginfo.txt")
+log_file = pathlib.Path("loginfo.txt")
 
 # Set constants
 time_constant_max = 16  # There are 20 frames total
@@ -45,12 +45,16 @@ input_size = 784
 processed_x_size = 784
 belief_state_size = 50
 state_size = 8  # from original paper
+d_block_hidden_size = 50
+decoder_hidden_size = 200
 
 tdvae = TD_VAE(
     x_size=input_size,
     processed_x_size=processed_x_size,
     b_size=belief_state_size,
     z_size=state_size,
+    d_block_hidden_size=d_block_hidden_size,
+    decoder_hidden_size=decoder_hidden_size,
 )
 
 # "CUDA is a parallel computing platform and application programming interface (API)
@@ -75,7 +79,7 @@ with open(log_file, "w") as log_file_handle:
             tdvae.forward(images)
 
             # Randomly sample a time step and jumpy step
-            t_1 = np.random.choice(time_option_max)
+            t_1 = np.random.choice(time_constant_max)
             t_2 = t_1 + np.random.choice(time_jump_options)
 
             # Calculate loss function based on two time points
@@ -111,6 +115,40 @@ with open(log_file, "w") as log_file_handle:
                 f"./output/model_epoch_{epoch}.pt",
             )
 
+            # Calculate loss function based on two time points
+            loss = tdvae.calculate_loss(t_1, t_2)
+
+            # must clear out stored gradient
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                ),
+                file=log_file_handle,
+                flush=True,
+            )
+
+            print(
+                "epoch: {:>4d}, idx: {:>4d}, loss: {:.2f}".format(
+                    epoch, idx, loss.item()
+                )
+            )
+
+        if (epoch + 1) % 50 == 0:
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": tdvae.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "loss": loss,
+                },
+                f"./output/model_epoch_{epoch}.pt",
+            )
+
+'''
 # info about the model
 params = list(tdvae.parameters())
 for i in range(len(params)):
@@ -127,3 +165,5 @@ print(tdvae)
 summary(tdvae)
 summary(tdvae(1, 784))
 summary(tdvae, (60000, 784))
+'''
+
