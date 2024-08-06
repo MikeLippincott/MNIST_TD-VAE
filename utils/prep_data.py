@@ -1,26 +1,25 @@
-__author__ = "Keenan Manpearl"
-__date__ = "2023/1/24"
-
+""""
+original code by Xinqiang Ding <xqding@umich.edu>: https://github.com/xqding/TD-VAE/blob/master/script/prep_data.py
 """
-original code by Xinqiang Ding <xqding@umich.edu>
-"""
-
 
 import numpy as np
 from torch.utils.data import Dataset
 
 
 class MNIST_Dataset(Dataset):
-    def __init__(self, image, binary=True):
+    def __init__(self, image, label, binary=True, number_of_frames=20):
         super(MNIST_Dataset).__init__()
         self.image = image
+        self.label = label
         self.binary = binary
+        self.number_of_frames = number_of_frames
 
     def __len__(self):
-        return self.image.shape[0]
+        return self.label.shape[0]
 
     def __getitem__(self, idx):
         image = np.copy(self.image[idx, :].reshape(28, 28))
+        label = np.copy(self.label[idx,])
 
         if self.binary:
             # ## binarize MNIST images
@@ -42,25 +41,13 @@ class MNIST_Dataset(Dataset):
             )
 
             # loop through the thresholds to find the one with the least within class variance
-            for color_threshold in color_thresholds:
-                bg_pixels = all_colors[all_colors < color_threshold]
-                weight_bg = len(bg_pixels) / total_weight
-                variance_bg = np.var(bg_pixels)
+            if self.binary:
+                # ## binarize MNIST images
+                tmp = np.random.rand(28, 28)
+                image = tmp <= image
 
-                fg_pixels = all_colors[all_colors >= color_threshold]
-                weight_fg = len(fg_pixels) / total_weight
-                variance_fg = np.var(fg_pixels)
-
-                within_class_variance = (
-                    weight_fg * variance_fg + weight_bg * variance_bg
-                )
-
-                if least_variance == -1 or least_variance > within_class_variance:
-                    least_variance = within_class_variance
-                    least_variance_threshold = color_threshold
-            image[image >= color_threshold] = 1
-            image[image < color_threshold] = 0
         image = image.astype(np.float32)
+        label = label.astype(np.int32)
 
         ## randomly choose a direction and generate a sequence
         ## of images that move in the chosen direction
@@ -68,7 +55,7 @@ class MNIST_Dataset(Dataset):
         image_list = []
         # image = np.roll(image, np.random.choice(np.arange(28)), 1)
         image_list.append(image.reshape(-1))
-        for k in range(1, 20):
+        for k in range(1, self.number_of_frames):
             if direction == "left":
                 image = np.roll(image, -1, 1)
                 image_list.append(image.reshape(-1))
@@ -77,4 +64,8 @@ class MNIST_Dataset(Dataset):
                 image_list.append(image.reshape(-1))
 
         image_seq = np.array(image_list)
-        return image_seq
+        label_seq = np.tile(label, (self.number_of_frames, 1))
+
+        sample = {"image": image_seq, "label": label_seq}
+
+        return idx, sample
