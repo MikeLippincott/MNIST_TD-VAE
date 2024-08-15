@@ -18,6 +18,7 @@ dependencies:
   - conda-forge::opencv
   - conda-forge::arrow
   - conda-forge::pyarrow
+  - conda-forge::umap-learn
   - pip:
     - 'transformers[torch]'
     - mnist

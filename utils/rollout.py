@@ -4,7 +4,6 @@ After training the model, we can try to use the model to do jumpy predictions.
 """
 
 import pathlib
-import pickle
 
 import matplotlib.pyplot as plt
 import torch
@@ -16,17 +15,11 @@ from torch.utils.data import DataLoader
 
 
 def rollout_func(
-    model_path: pathlib.Path,
-    input_size: int,
-    processed_x_size: int,
-    belief_state_size: int,
-    d_block_hidden_size: int,
-    decoder_hidden_size: int,
-    state_size: int,
-    mnist_pickle_path: pathlib.Path,
+    rollout_stack: torch.Tensor,
+    images: torch.Tensor,
     epoch: str | int,
     batch_size: int,
-    num_frames: int = 20,
+    save_path: pathlib.Path,
     t1: int = 16,
     t2: int = 19,
 ) -> None:
@@ -61,54 +54,6 @@ def rollout_func(
         The t2 value to use for rollout predictions for future frames, by default 19
 
     """
-    #### load trained model
-    checkpoint = torch.load(model_path, weights_only=True)
-    input_size = input_size
-    processed_x_size = processed_x_size
-    belief_state_size = belief_state_size
-    state_size = state_size
-    tdvae = TD_VAE(
-        x_size=input_size,
-        processed_x_size=processed_x_size,
-        b_size=belief_state_size,
-        z_size=state_size,
-        d_block_hidden_size=d_block_hidden_size,
-        decoder_hidden_size=decoder_hidden_size,
-    )
-    num_frames = num_frames
-    tdvae.load_state_dict(checkpoint["model_state_dict"])
-
-    #### load dataset
-    with open(mnist_pickle_path, "rb") as file_handle:
-        MNIST = pickle.load(file_handle)
-    tdvae.eval()
-    tdvae = tdvae.cuda()
-
-    data = MNIST_Dataset(
-        MNIST["train_image"],
-        MNIST["train_label"],
-        binary=True,
-        number_of_frames=num_frames,
-    )
-    batch_size = 6
-    data_loader = DataLoader(data, batch_size=batch_size, shuffle=True)
-    idx, images = next(enumerate(data_loader))
-
-    images = images[1]["image"].cuda()
-    idx = images[0]
-
-    ## calculate belief
-    # forward step in the model to generate the belief state and latent state
-    # we can grab the decoded jumpy prediction from the model after this step
-    tdvae.forward(images)
-
-    # assertions:
-    assert t1 < t2
-    assert t2 < num_frames
-    assert t1 >= 0
-    assert batch_size > 0
-
-    rollout_images = tdvae.rollout(images, t1, t2)
     #### plot results
     fig = plt.figure(0, figsize=(12, 4))
 
@@ -126,7 +71,7 @@ def rollout_func(
         for j in range(t1, t2 + 1):
             axes = plt.subplot(gs[i, j + 1])
             axes.imshow(
-                1 - rollout_images.cpu().data.numpy()[i, j - t1].reshape(28, 28),
+                1 - rollout_stack.cpu().data.numpy()[i, j - t1].reshape(28, 28),
                 cmap="binary",
             )
             axes.axis("off")
@@ -141,6 +86,6 @@ def rollout_func(
         # add the label below the image
         axes.text(0.5, 0.5, f"{1 + j}", fontsize=16, ha="center")
         axes.axis("off")
-    fig.savefig(f"../output/rollout_result_{epoch}.png")
+    fig.savefig(pathlib.Path(save_path / f"rollout_result_{epoch}.png"))
     plt.show(fig)
     plt.close(fig)

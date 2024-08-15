@@ -5,14 +5,14 @@ log
 loginfo*.txt
 __*__
 nohup.out
-# outputs 
+# outputs
 *output*
 model2.py
-# same as main train 
+# same as main train
 main_continue.py
-# Jupyter checkpoint files
-*.ipynb*
 # unused scripts
 test*
 torchview*
 *pkl
+1.setup_TD-VAE/hyperparameter_search
+1.setup_TD-VAE/results

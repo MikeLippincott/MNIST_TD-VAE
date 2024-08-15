@@ -2,22 +2,65 @@
 original code by Xinqiang Ding <xqding@umich.edu>: https://github.com/xqding/TD-VAE/blob/master/script/prep_data.py
 """
 
+from typing import Dict, Tuple
+
 import numpy as np
 from torch.utils.data import Dataset
 
 
 class MNIST_Dataset(Dataset):
-    def __init__(self, image, label, binary=True, number_of_frames=20):
+    """
+    MNIST dataset class for generating sequences of images that move in a
+
+    Parameters
+    ----------
+    Dataset : torch.utils.data.Dataset
+        Dataset class from PyTorch
+    """
+
+    def __init__(
+        self,
+        image: np.array,
+        label: np.array,
+        binary: bool = True,
+        number_of_frames: int = 20,
+    ) -> None:
+        """
+        Initialize the dataset class
+
+        Parameters
+        ----------
+        image : np.array
+            Input image array
+        label : np.array
+            Input label array
+        binary : bool, optional
+            Binarize the input if true, by default True
+        number_of_frames : int, optional
+            number of frames to initialize , by default 20
+
+        Methods
+        -------
+        __len__(self) -> int:
+            Get the length of the dataset
+        __getitem__(self, idx:int) -> Tuple[int, Dict[str, np.array]]:
+            Get the item at the given index
+
+        Returns
+        -------
+        None
+        """
+
         super(MNIST_Dataset).__init__()
         self.image = image
         self.label = label
         self.binary = binary
         self.number_of_frames = number_of_frames
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.label.shape[0]
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[int, Dict[str, np.array]]:
         image = np.copy(self.image[idx, :].reshape(28, 28))
         label = np.copy(self.label[idx,])
 
