@@ -1,4 +1,5 @@
 __pycache__/
+data/
 .vscode
 #logging info
 log
@@ -16,3 +17,4 @@ torchview*
 *pkl
 1.setup_TD-VAE/hyperparameter_search
 1.setup_TD-VAE/results
+1.setup_TD-VAE/models

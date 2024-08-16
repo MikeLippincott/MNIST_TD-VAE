@@ -1,6 +1,0 @@
-*
-!.gitignore
-*.pt
-1.setup_TD-VAE/log
-data
-utils/__pycache__
